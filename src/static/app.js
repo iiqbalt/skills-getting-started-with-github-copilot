@@ -12,20 +12,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
+        activityCard.dataset.activityName = name;
 
         const spotsLeft = details.max_participants - details.participants.length;
+        activityCard.dataset.maxParticipants = details.max_participants;
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Availability:</strong> <span class="spots-left">${spotsLeft}</span> spots left</p>
         `;
+
+        const participantsSection = document.createElement("div");
+        participantsSection.className = "participants-section";
+
+        const participantsHeading = document.createElement("h5");
+        participantsHeading.textContent = "Participants";
+
+        const participantCount = document.createElement("span");
+        participantCount.className = "participants-count";
+        participantCount.textContent = details.participants.length;
+        participantsHeading.appendChild(participantCount);
+
+        participantsSection.appendChild(participantsHeading);
+
+        const participantsList = document.createElement("ul");
+        participantsList.className = "participants-list";
+
+        if (details.participants.length === 0) {
+          const emptyItem = document.createElement("li");
+          emptyItem.className = "participants-empty";
+          emptyItem.textContent = "No sign-ups yet";
+          participantsList.appendChild(emptyItem);
+        } else {
+          details.participants.forEach((email) => {
+            const participantItem = document.createElement("li");
+            participantItem.textContent = email;
+            participantsList.appendChild(participantItem);
+          });
+        }
+
+        participantsSection.appendChild(participantsList);
+        activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
 
@@ -62,6 +97,27 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+
+        const activityCard = Array.from(activitiesList.querySelectorAll(".activity-card"))
+          .find((card) => card.dataset.activityName === activity);
+        if (activityCard) {
+          const participantsList = activityCard.querySelector(".participants-list");
+          const emptyItem = participantsList.querySelector(".participants-empty");
+          if (emptyItem) {
+            emptyItem.remove();
+          }
+
+          const participantItem = document.createElement("li");
+          participantItem.textContent = email;
+          participantsList.appendChild(participantItem);
+
+          const participantCount = activityCard.querySelector(".participants-count");
+          const count = Number(participantCount.textContent) + 1;
+          participantCount.textContent = count;
+
+          const spotsLeft = Number(activityCard.dataset.maxParticipants) - count;
+          activityCard.querySelector(".spots-left").textContent = spotsLeft;
+        }
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
